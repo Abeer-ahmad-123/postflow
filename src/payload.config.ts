@@ -11,6 +11,29 @@ import { PostActions } from './collections/PostActions'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+const legacySSLModeAliases = new Set(['prefer', 'require', 'verify-ca'])
+
+const getDatabaseUrl = () => {
+  const databaseUrl = process.env.DATABASE_URL || ''
+
+  if (!databaseUrl) {
+    return databaseUrl
+  }
+
+  try {
+    const url = new URL(databaseUrl)
+    const sslMode = url.searchParams.get('sslmode')
+
+    if (sslMode && legacySSLModeAliases.has(sslMode)) {
+      url.searchParams.set('sslmode', 'verify-full')
+      return url.toString()
+    }
+  } catch {
+    return databaseUrl
+  }
+
+  return databaseUrl
+}
 
 export default buildConfig({
   admin: {
@@ -28,8 +51,9 @@ export default buildConfig({
   },
   db: postgresAdapter({
     pool: {
-      connectionString: process.env.DATABASE_URL || '',
+      connectionString: getDatabaseUrl(),
     },
+    push: false,
   }),
   sharp,
   plugins: [],

@@ -1,5 +1,4 @@
 import type { Payload, Where } from 'payload'
-import { sql } from '@payloadcms/db-postgres'
 
 import type { User } from '@/payload-types'
 import { isPostStatus, statuses, type PostStatus } from '@/lib/workflow/postWorkflow'
@@ -97,22 +96,20 @@ export function buildPostsWhere(params: PostSearchParams): Where | undefined {
 }
 
 export async function getDashboardCounts({ payload, user }: { payload: Payload; user: User }) {
-  void user
-
-  const tableName = payload.db.tableNameMap.get('posts') || 'posts'
-  const table = sql.raw(`"${tableName.replaceAll('"', '""')}"`)
-  const result = await payload.db.execute({
-    sql: sql`
-      select status, count(*)::int as count
-      from ${table}
-      group by status
-    `,
+  const posts = await payload.find({
+    collection: 'posts',
+    depth: 0,
+    overrideAccess: false,
+    pagination: false,
+    select: {
+      status: true,
+    },
+    user,
   })
-  const rows = result.rows as Array<{ count: number | string; status: PostStatus }>
-  const byStatus = rows.reduce(
+  const byStatus = posts.docs.reduce(
     (acc, row) => {
       if (isPostStatus(row.status)) {
-        acc[row.status] = Number(row.count) || 0
+        acc[row.status] += 1
       }
 
       return acc

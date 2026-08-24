@@ -2,7 +2,7 @@
 
 import { Loader2, LogIn } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -14,13 +14,24 @@ export function LoginForm() {
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
 
+  useEffect(() => {
+    const controller = new AbortController()
+
+    void fetch('/api/auth/warmup', {
+      cache: 'no-store',
+      signal: controller.signal,
+    }).catch(() => undefined)
+
+    return () => controller.abort()
+  }, [])
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     setPending(true)
 
     const formData = new FormData(event.currentTarget)
-    const response = await fetch('/api/users/login', {
+    const response = await fetch('/api/auth/login', {
       body: JSON.stringify({
         email: String(formData.get('email') || ''),
         password: String(formData.get('password') || ''),
@@ -31,9 +42,8 @@ export function LoginForm() {
       method: 'POST',
     })
 
-    setPending(false)
-
     if (!response.ok) {
+      setPending(false)
       setError('Email or password is incorrect.')
       return
     }

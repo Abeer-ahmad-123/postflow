@@ -54,7 +54,9 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
   },
-  auth: true,
+  auth: {
+    depth: 0,
+  },
   fields: [
     {
       name: 'name',
