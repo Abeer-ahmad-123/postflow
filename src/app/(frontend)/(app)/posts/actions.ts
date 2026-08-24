@@ -11,7 +11,6 @@ import { getFormString } from '@/lib/utils'
 import { getPayloadClient } from '@/lib/payload/getPayloadClient'
 import { createPostActionAudit } from '@/lib/workflow/postAudit'
 import { changePostStatus, createTopic, updatePostContent } from '@/lib/workflow/changePostStatus'
-import { isPostStatus } from '@/lib/workflow/postWorkflow'
 
 function actionError(error: unknown): ActionState {
   if (error instanceof z.ZodError) {
@@ -124,9 +123,8 @@ export async function changeStatusFormAction(
     const newStatus = getFormString(formData, 'status')
     const comment = getFormString(formData, 'comment')
 
-    const updatedPost = await changePostStatus({
+    await changePostStatus({
       comment,
-      deferAudit: true,
       newStatus,
       payload,
       postId,
@@ -134,24 +132,6 @@ export async function changeStatusFormAction(
     })
 
     revalidatePath(`/posts/${postId}`)
-
-    if (user && isPostStatus(updatedPost.status)) {
-      after(async () => {
-        try {
-          await createPostActionAudit({
-            action: updatedPost.status,
-            comment,
-            payload,
-            postId: updatedPost.id,
-            user,
-          })
-
-          revalidatePath(`/posts/${postId}`)
-        } catch (error) {
-          console.error(`Unable to create audit action for post ${postId}`, error)
-        }
-      })
-    }
 
     return {
       message: 'Workflow status updated.',

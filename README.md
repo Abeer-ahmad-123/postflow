@@ -33,6 +33,7 @@ Set:
 DATABASE_URL=postgres://...?sslmode=verify-full
 PAYLOAD_SECRET=long-random-secret
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
+POSTFLOW_SIGNUP_INVITE_CODE=private-team-code
 ```
 
 4. Generate Payload types:
@@ -65,7 +66,7 @@ Later users should create accounts from:
 http://localhost:3000/signup
 ```
 
-Signup users can log into Postflow at `/login`, but cannot access the Payload admin dashboard at `/admin`.
+Signup users must enter `POSTFLOW_SIGNUP_INVITE_CODE` to create an account. They can log into Postflow at `/login`, but cannot access the Payload admin dashboard at `/admin`.
 
 If you are adding this to an existing database, sync the oldest user as the Payload admin:
 
@@ -123,7 +124,7 @@ npm run build
 Deployment checklist:
 
 1. Create a Neon PostgreSQL database.
-2. Set `DATABASE_URL`, `PAYLOAD_SECRET`, and `NEXT_PUBLIC_SERVER_URL` in Vercel project environment variables. If the Neon URL contains `sslmode=require`, change it to `sslmode=verify-full`.
+2. Set `DATABASE_URL`, `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`, and `POSTFLOW_SIGNUP_INVITE_CODE` in Vercel project environment variables. If the Neon URL contains `sslmode=require`, change it to `sslmode=verify-full`.
 3. Set `NEXT_PUBLIC_SERVER_URL` to the production Vercel URL, for example `https://your-project.vercel.app`.
 4. Run Payload migrations during release setup with `npm run migrate`.
 5. Deploy the Next.js app to Vercel.

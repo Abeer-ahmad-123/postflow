@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { Users } from '@/collections/Users'
+import { signupSchema } from '@/lib/users/userValidation'
 import type { User } from '@/payload-types'
 
 const adminUser = {
@@ -122,5 +123,32 @@ describe('user admin access', () => {
         } as never,
       }),
     ).resolves.toBe(false)
+  })
+})
+
+describe('signup validation', () => {
+  it('requires an invite code', () => {
+    expect(() =>
+      signupSchema.parse({
+        email: 'new@example.com',
+        inviteCode: '',
+        name: 'New User',
+        password: 'Postflow123!',
+      }),
+    ).toThrow('Invite code is required.')
+  })
+
+  it('accepts complete signup input with an invite code', () => {
+    expect(
+      signupSchema.parse({
+        email: 'new@example.com',
+        inviteCode: 'team-code',
+        name: 'New User',
+        password: 'Postflow123!',
+      }),
+    ).toMatchObject({
+      email: 'new@example.com',
+      inviteCode: 'team-code',
+    })
   })
 })

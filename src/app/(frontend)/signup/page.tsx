@@ -10,7 +10,7 @@ export default function SignupPage() {
           <PostflowLogo />
           <CardTitle className="text-2xl">Create Account</CardTitle>
           <CardDescription>
-            Join Postflow. After the first account, new users are normal dashboard users.
+            Join Postflow with your team invite code. New users are normal dashboard users.
           </CardDescription>
         </CardHeader>
         <CardContent>

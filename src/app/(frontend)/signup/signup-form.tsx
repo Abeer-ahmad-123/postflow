@@ -46,6 +46,10 @@ export function SignupForm() {
         <Label htmlFor="password">Password</Label>
         <Input autoComplete="new-password" id="password" minLength={8} name="password" required type="password" />
       </div>
+      <div className="space-y-2">
+        <Label htmlFor="inviteCode">Invite Code</Label>
+        <Input autoComplete="off" id="inviteCode" name="inviteCode" required type="password" />
+      </div>
       {state.message && !state.ok ? (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{state.message}</p>
       ) : null}

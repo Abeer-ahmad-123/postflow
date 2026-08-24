@@ -5,7 +5,6 @@ import { SummaryCards } from '@/components/dashboard/summary-cards'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { requireCurrentUser } from '@/lib/auth/getCurrentUser'
 import { getDashboardCounts } from '@/lib/posts/postQueries'
 import { formatDateTime, userName } from '@/lib/utils'
 import { getPayloadClient } from '@/lib/payload/getPayloadClient'
@@ -14,15 +13,15 @@ import { statusLabels, type PostStatus } from '@/lib/workflow/postWorkflow'
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const [payload, user] = await Promise.all([getPayloadClient(), requireCurrentUser()])
+  const payload = await getPayloadClient()
 
   const [counts, recentPosts, recentActions] = await Promise.all([
-    getDashboardCounts({ payload, user }),
+    getDashboardCounts({ payload }),
     payload.find({
       collection: 'posts',
       depth: 1,
       limit: 6,
-      overrideAccess: false,
+      overrideAccess: true,
       pagination: false,
       select: {
         status: true,
@@ -30,13 +29,12 @@ export default async function DashboardPage() {
         topicName: true,
       },
       sort: '-updatedAt',
-      user,
     }),
     payload.find({
       collection: 'post-actions',
       depth: 1,
       limit: 6,
-      overrideAccess: false,
+      overrideAccess: true,
       pagination: false,
       select: {
         action: true,
@@ -46,7 +44,6 @@ export default async function DashboardPage() {
         post: true,
       },
       sort: '-performedAt',
-      user,
     }),
   ])
 

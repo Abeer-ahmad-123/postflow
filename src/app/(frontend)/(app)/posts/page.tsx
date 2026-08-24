@@ -4,7 +4,6 @@ import Link from 'next/link'
 import { PostFilters } from '@/components/posts/post-filters'
 import { PostsTable } from '@/components/posts/posts-table'
 import { Button } from '@/components/ui/button'
-import { requireCurrentUser } from '@/lib/auth/getCurrentUser'
 import { buildPostsWhere, parsePage, parseSort, type PostSearchParams } from '@/lib/posts/postQueries'
 import { getPayloadClient } from '@/lib/payload/getPayloadClient'
 
@@ -27,7 +26,7 @@ function normalizeSearchParams(raw: Record<string, string | string[] | undefined
 
 export default async function PostsPage({ searchParams }: { searchParams: SearchParams }) {
   const params = normalizeSearchParams(await searchParams)
-  const [payload, user] = await Promise.all([getPayloadClient(), requireCurrentUser()])
+  const payload = await getPayloadClient()
   const page = parsePage(params.page)
 
   const [posts, users] = await Promise.all([
@@ -35,19 +34,17 @@ export default async function PostsPage({ searchParams }: { searchParams: Search
       collection: 'posts',
       depth: 1,
       limit: 10,
-      overrideAccess: false,
+      overrideAccess: true,
       page,
       sort: parseSort(params.sort),
-      user,
       where: buildPostsWhere(params),
     }),
     payload.find({
       collection: 'users',
       depth: 0,
       limit: 100,
-      overrideAccess: false,
+      overrideAccess: true,
       sort: 'name',
-      user,
     }),
   ])
 

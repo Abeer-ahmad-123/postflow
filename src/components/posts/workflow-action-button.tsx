@@ -1,12 +1,14 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 import {
   changeStatusFormAction,
 } from '@/app/(frontend)/(app)/posts/actions'
+import { notifyActionHistoryRefresh } from '@/components/posts/realtime-action-history'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -36,6 +38,7 @@ export function WorkflowActionButton({
   postId: string
   status: PostStatus
 }) {
+  const router = useRouter()
   const toastKey = useRef('')
   const [open, setOpen] = useState(false)
   const action = changeStatusFormAction.bind(null, postId)
@@ -52,11 +55,13 @@ export function WorkflowActionButton({
 
     if (state.ok) {
       toast.success(state.message)
+      notifyActionHistoryRefresh(postId)
+      router.refresh()
       window.setTimeout(() => setOpen(false), 0)
     } else {
       toast.error(state.message)
     }
-  }, [state])
+  }, [postId, router, state])
 
   if (disabledReason) {
     return (

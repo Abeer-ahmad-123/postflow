@@ -31,16 +31,23 @@ export const PostActions: CollectionConfig = {
     group: 'Workflow',
     useAsTitle: 'action',
   },
+  indexes: [
+    {
+      fields: ['post', 'performedAt'],
+    },
+  ],
   fields: [
     {
       name: 'post',
       type: 'relationship',
+      index: true,
       relationTo: 'posts',
       required: true,
     },
     {
       name: 'action',
       type: 'select',
+      index: true,
       options: [
         { label: 'Open', value: 'open' },
         { label: 'Review', value: 'review' },
@@ -56,6 +63,7 @@ export const PostActions: CollectionConfig = {
       admin: {
         readOnly: true,
       },
+      index: true,
       relationTo: 'users',
       required: true,
     },
@@ -68,6 +76,7 @@ export const PostActions: CollectionConfig = {
         },
         readOnly: true,
       },
+      index: true,
       required: true,
     },
     {

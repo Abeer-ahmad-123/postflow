@@ -1,7 +1,7 @@
 import type { Payload, Where } from 'payload'
 
-import type { User } from '@/payload-types'
 import { isPostStatus, statuses, type PostStatus } from '@/lib/workflow/postWorkflow'
+import type { Post, PostAction, User } from '@/payload-types'
 
 export type PostSearchParams = {
   dateField?: string
@@ -95,16 +95,15 @@ export function buildPostsWhere(params: PostSearchParams): Where | undefined {
   return and.length > 0 ? { and } : undefined
 }
 
-export async function getDashboardCounts({ payload, user }: { payload: Payload; user: User }) {
+export async function getDashboardCounts({ payload }: { payload: Payload }) {
   const posts = await payload.find({
     collection: 'posts',
     depth: 0,
-    overrideAccess: false,
+    overrideAccess: true,
     pagination: false,
     select: {
       status: true,
     },
-    user,
   })
   const byStatus = posts.docs.reduce(
     (acc, row) => {
@@ -121,4 +120,48 @@ export async function getDashboardCounts({ payload, user }: { payload: Payload; 
     all: statuses.reduce((total, status) => total + byStatus[status], 0),
     byStatus,
   }
+}
+
+export async function getPostActionHistory({
+  limit = 100,
+  overrideAccess = true,
+  payload,
+  post,
+  user,
+}: {
+  limit?: number
+  overrideAccess?: boolean
+  payload: Payload
+  post: Post
+  user?: User
+}) {
+  const actions = await payload.find({
+    collection: 'post-actions',
+    depth: 1,
+    limit,
+    overrideAccess,
+    sort: '-performedAt',
+    user,
+    where: {
+      post: {
+        equals: post.id,
+      },
+    },
+  })
+
+  if (actions.docs.length > 0) {
+    return actions.docs
+  }
+
+  return [
+    {
+      action: 'open',
+      createdAt: post.createdAt,
+      id: 0,
+      performedAt: post.createdAt,
+      performedBy: post.performedBy,
+      post: post.id,
+      updatedAt: post.updatedAt,
+    },
+  ] satisfies PostAction[]
 }

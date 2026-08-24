@@ -1,67 +1,37 @@
 import { ExternalLink } from 'lucide-react'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 
-import { ActionTimeline } from '@/components/posts/action-timeline'
 import { PostForm } from '@/components/posts/post-form'
 import { PostTextProvider } from '@/components/posts/post-text-state'
+import { RealtimeActionHistory } from '@/components/posts/realtime-action-history'
 import { WorkflowActions } from '@/components/posts/workflow-actions'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { StatusBadge } from '@/components/ui/status-badge'
-import { requireCurrentUser } from '@/lib/auth/getCurrentUser'
 import { getPayloadClient } from '@/lib/payload/getPayloadClient'
+import { getPostActionHistory } from '@/lib/posts/postQueries'
 import { canEditPostContent } from '@/lib/workflow/postWorkflow'
 import { formatDateTime, userName } from '@/lib/utils'
-import type { PostAction } from '@/payload-types'
+import type { Post } from '@/payload-types'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PostDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [payload, user] = await Promise.all([getPayloadClient(), requireCurrentUser()])
+  const payload = await getPayloadClient()
 
-  const [post, actions] = await Promise.all([
-    payload.findByID({
-      collection: 'posts',
-      depth: 1,
-      disableErrors: true,
-      id,
-      overrideAccess: false,
-      user,
-    }),
-    payload.find({
-      collection: 'post-actions',
-      depth: 1,
-      limit: 100,
-      overrideAccess: false,
-      sort: 'performedAt',
-      user,
-      where: {
-        post: {
-          equals: id,
-        },
-      },
-    }),
-  ])
+  const post = await payload.findByID({
+    collection: 'posts',
+    depth: 1,
+    disableErrors: true,
+    id,
+    overrideAccess: true,
+  })
 
   if (!post) {
     notFound()
   }
 
-  const historyActions =
-    actions.docs.length > 0
-      ? actions.docs
-      : ([
-          {
-            action: 'open',
-            createdAt: post.createdAt,
-            id: 0,
-            performedAt: post.createdAt,
-            performedBy: post.performedBy,
-            post: post.id,
-            updatedAt: post.updatedAt,
-          },
-        ] satisfies PostAction[])
-  const createdBy = historyActions[0]?.performedBy || post.performedBy
   const editable = canEditPostContent(post.status)
 
   return (
@@ -92,12 +62,12 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-xs font-medium uppercase tracking-normal text-slate-500">Created By</p>
-                <p className="mt-1 text-sm text-slate-950">{userName(createdBy)}</p>
-              </div>
-              <div>
                 <p className="text-xs font-medium uppercase tracking-normal text-slate-500">Created At</p>
                 <p className="mt-1 text-sm text-slate-950">{formatDateTime(post.createdAt)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-normal text-slate-500">Updated At</p>
+                <p className="mt-1 text-sm text-slate-950">{formatDateTime(post.updatedAt)}</p>
               </div>
             </CardContent>
           </Card>
@@ -166,7 +136,9 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
               <CardDescription>Permanent audit trail for this topic/post.</CardDescription>
             </CardHeader>
             <CardContent>
-              <ActionTimeline actions={historyActions} />
+              <Suspense fallback={<p className="py-6 text-sm text-slate-500">Loading history...</p>}>
+                <PostActionHistory post={post} />
+              </Suspense>
             </CardContent>
           </Card>
         </div>
@@ -174,4 +146,12 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
       </div>
     </PostTextProvider>
   )
+}
+
+async function PostActionHistory({ post }: { post: Post }) {
+  const payload = await getPayloadClient()
+  const historyActions = await getPostActionHistory({ payload, post })
+  const historyKey = historyActions.map((action) => action.id).join(':')
+
+  return <RealtimeActionHistory initialActions={historyActions} key={historyKey} postId={String(post.id)} />
 }

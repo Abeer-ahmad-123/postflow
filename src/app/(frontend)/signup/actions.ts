@@ -30,12 +30,25 @@ function actionError(error: unknown): ActionState {
 
 export async function signupAction(_previousState: ActionState, formData: FormData): Promise<ActionState> {
   try {
-    const payload = await getPayloadClient()
     const input = signupSchema.parse({
       email: getFormString(formData, 'email'),
+      inviteCode: getFormString(formData, 'inviteCode'),
       name: getFormString(formData, 'name'),
       password: getFormString(formData, 'password'),
     })
+    const configuredInviteCode = process.env.POSTFLOW_SIGNUP_INVITE_CODE?.trim()
+
+    if (!configuredInviteCode) {
+      throw new Error('Signup invite code is not configured.')
+    }
+
+    if (input.inviteCode !== configuredInviteCode) {
+      return {
+        message: 'Invalid invite code.',
+        ok: false,
+      }
+    }
+    const payload = await getPayloadClient()
 
     const existing = await payload.find({
       collection: 'users',
