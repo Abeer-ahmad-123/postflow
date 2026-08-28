@@ -1,5 +1,5 @@
 import type { Payload } from 'payload'
-import { describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PostActions } from '@/collections/PostActions'
 import { Posts } from '@/collections/Posts'
@@ -9,6 +9,20 @@ import { getTransitionBlockReason } from '@/lib/workflow/postWorkflow'
 
 const userA = { email: 'a@example.com', id: 1, name: 'User A' } as User
 const userB = { email: 'b@example.com', id: 2, name: 'User B' } as User
+const originalSlackWebhookUrl = process.env.SLACK_WEBHOOK_URL
+
+beforeEach(() => {
+  delete process.env.SLACK_WEBHOOK_URL
+})
+
+afterAll(() => {
+  if (originalSlackWebhookUrl === undefined) {
+    delete process.env.SLACK_WEBHOOK_URL
+    return
+  }
+
+  process.env.SLACK_WEBHOOK_URL = originalSlackWebhookUrl
+})
 
 function makePost(overrides: Partial<Post> = {}) {
   return {

@@ -1,6 +1,10 @@
 import type { Payload } from 'payload'
 
 import type { Post, User } from '@/payload-types'
+import {
+  notifyPostStatusChangedToSlack,
+  notifyTopicAddedToSlack,
+} from '@/lib/notifications/slack'
 import { createTopicSchema, editPostSchema, validatePostContentForStatus } from '@/lib/validation/postValidation'
 import { createPostActionAudit } from '@/lib/workflow/postAudit'
 import {
@@ -42,7 +46,7 @@ export async function createTopic({
   const currentUser = requireUser(user)
   const parsed = createTopicSchema.parse(input)
 
-  return payload.create({
+  const post = await payload.create({
     collection: 'posts',
     context: deferInitialAudit
       ? {
@@ -63,6 +67,13 @@ export async function createTopic({
     },
     user: currentUser as User,
   })
+
+  await notifyTopicAddedToSlack({
+    post,
+    user: currentUser,
+  })
+
+  return post
 }
 
 export async function updatePostContent({
@@ -162,19 +173,23 @@ export async function changePostStatus({
     user: currentUser as User,
   })
 
-  if (deferAudit) {
-    return updatedPost as Post
+  if (!deferAudit) {
+    await createPostActionAudit({
+      action: newStatus,
+      comment,
+      payload,
+      postId: post.id,
+      req: {
+        user: currentUser as User,
+      },
+      user: currentUser as User,
+    })
   }
 
-  await createPostActionAudit({
-    action: newStatus,
+  await notifyPostStatusChangedToSlack({
     comment,
-    payload,
-    postId: post.id,
-    req: {
-      user: currentUser as User,
-    },
-    user: currentUser as User,
+    post: updatedPost,
+    user: currentUser,
   })
 
   return updatedPost as Post

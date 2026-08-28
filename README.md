@@ -34,7 +34,10 @@ DATABASE_URL=postgres://...?sslmode=verify-full
 PAYLOAD_SECRET=long-random-secret
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 POSTFLOW_SIGNUP_INVITE_CODE=private-team-code
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
 ```
+
+`SLACK_WEBHOOK_URL` is optional. When set to a Slack incoming webhook URL, Postflow sends Slack notifications when a topic is added, submitted for review, proof read, sent back, declined, or marked as posted.
 
 4. Generate Payload types:
 
@@ -124,7 +127,7 @@ npm run build
 Deployment checklist:
 
 1. Create a Neon PostgreSQL database.
-2. Set `DATABASE_URL`, `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`, and `POSTFLOW_SIGNUP_INVITE_CODE` in Vercel project environment variables. If the Neon URL contains `sslmode=require`, change it to `sslmode=verify-full`.
+2. Set `DATABASE_URL`, `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`, `POSTFLOW_SIGNUP_INVITE_CODE`, and optional `SLACK_WEBHOOK_URL` in Vercel project environment variables. If the Neon URL contains `sslmode=require`, change it to `sslmode=verify-full`.
 3. Set `NEXT_PUBLIC_SERVER_URL` to the production Vercel URL, for example `https://your-project.vercel.app`.
 4. Run Payload migrations during release setup with `npm run migrate`.
 5. Deploy the Next.js app to Vercel.
