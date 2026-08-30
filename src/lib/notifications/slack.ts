@@ -1,4 +1,5 @@
 import type { Post, User } from '@/payload-types'
+import { postPath } from '@/lib/posts/postLinks'
 import { userName } from '@/lib/utils'
 import {
   statusLabels,
@@ -7,7 +8,7 @@ import {
 } from '@/lib/workflow/postWorkflow'
 
 type SlackNotificationUser = Pick<User, 'id'> & Partial<Pick<User, 'email' | 'name'>>
-type SlackNotificationPost = Pick<Post, 'id' | 'status' | 'topicLink' | 'topicName'>
+type SlackNotificationPost = Pick<Post, 'id' | 'slug' | 'status' | 'topicLink' | 'topicName'>
 
 type SlackBlock =
   | {
@@ -29,10 +30,12 @@ const fallbackActionLabels: Record<PostStatus, string> = {
   declined: 'Decline',
   open: 'Send Back',
   posted: 'Mark as Posted',
-  proof_read: 'Proof Read',
+  ready: 'Mark as Ready',
   review: 'Submit for Review',
 }
 const slackRequestTimeoutMs = 5000
+const slackMemberIdPattern = /^[UW][A-Z0-9]+$/i
+const slackMemberMentionPattern = /^<@[UW][A-Z0-9]+>$/i
 
 function slackWebhookUrl() {
   return process.env.SLACK_WEBHOOK_URL?.trim()
@@ -42,10 +45,45 @@ function postflowBaseUrl() {
   return process.env.NEXT_PUBLIC_SERVER_URL?.trim().replace(/\/+$/, '')
 }
 
-function postflowPostUrl(postId: number | string) {
+function postflowPostUrl(post: SlackNotificationPost) {
   const baseUrl = postflowBaseUrl()
 
-  return baseUrl ? `${baseUrl}/posts/${encodeURIComponent(String(postId))}` : undefined
+  return baseUrl ? `${baseUrl}${postPath(post)}` : undefined
+}
+
+function slackMentionFromEnv(key: string) {
+  const value = process.env[key]?.trim()
+
+  if (!value) {
+    return undefined
+  }
+
+  if (slackMemberMentionPattern.test(value)) {
+    return value
+  }
+
+  if (slackMemberIdPattern.test(value)) {
+    return `<@${value}>`
+  }
+
+  console.warn(`${key} must be a Slack member ID like U123ABC or a mention token like <@U123ABC>.`)
+  return undefined
+}
+
+function statusMention(status: PostStatus) {
+  if (status === 'open') {
+    return slackMentionFromEnv('SLACK_OPEN_STATUS_MENTION')
+  }
+
+  if (status === 'review') {
+    return slackMentionFromEnv('SLACK_REVIEW_STATUS_MENTION')
+  }
+
+  if (status === 'ready') {
+    return slackMentionFromEnv('SLACK_READY_STATUS_MENTION')
+  }
+
+  return undefined
 }
 
 function slackEscape(value: string) {
@@ -81,18 +119,22 @@ function truncate(value: string, maxLength: number) {
 function buildSlackPayload({
   comment,
   eventLabel,
+  includeStatusMention = false,
   post,
   user,
 }: {
   comment?: string
   eventLabel: string
+  includeStatusMention?: boolean
   post: SlackNotificationPost
   user: SlackNotificationUser
 }) {
   const title = post.topicName || `Post ${post.id}`
-  const postLink = slackLink(postflowPostUrl(post.id), title)
+  const postLink = slackLink(postflowPostUrl(post), title)
   const sourceLink = slackLink(post.topicLink, 'Source')
-  const text = `Postflow: ${eventLabel} - ${title}`
+  const mention = includeStatusMention ? statusMention(post.status) : undefined
+  const mentionedEventLabel = mention ? `${eventLabel} ${mention}` : eventLabel
+  const text = `Postflow: ${mentionedEventLabel} - ${title}`
   const context = [
     `By ${slackEscape(actorName(user))}`,
     `Status: ${slackEscape(statusLabels[post.status])}`,
@@ -100,7 +142,7 @@ function buildSlackPayload({
   const blocks: SlackBlock[] = [
     {
       text: {
-        text: `*${slackEscape(eventLabel)}*\n${postLink}`,
+        text: `*${slackEscape(eventLabel)}*${mention ? ` ${mention}` : ''}\n${postLink}`,
         type: 'mrkdwn',
       },
       type: 'section',
@@ -181,6 +223,7 @@ export async function notifyTopicAddedToSlack({
   await sendSlackNotification(
     buildSlackPayload({
       eventLabel: 'Topic Added',
+      includeStatusMention: true,
       post,
       user,
     }),
@@ -200,6 +243,7 @@ export async function notifyPostStatusChangedToSlack({
     buildSlackPayload({
       comment,
       eventLabel: actionLabel(post.status),
+      includeStatusMention: true,
       post,
       user,
     }),

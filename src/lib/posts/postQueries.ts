@@ -165,3 +165,54 @@ export async function getPostActionHistory({
     },
   ] satisfies PostAction[]
 }
+
+export async function getPostByRouteParam({
+  depth = 1,
+  overrideAccess = true,
+  payload,
+  routeParam,
+  user,
+}: {
+  depth?: number
+  overrideAccess?: boolean
+  payload: Payload
+  routeParam: string
+  user?: User
+}) {
+  const normalizedParam = routeParam.trim()
+
+  if (!normalizedParam) {
+    return null
+  }
+
+  const bySlug = await payload.find({
+    collection: 'posts',
+    depth,
+    limit: 1,
+    overrideAccess,
+    pagination: false,
+    user,
+    where: {
+      slug: {
+        equals: normalizedParam,
+      },
+    },
+  })
+
+  if (bySlug.docs[0]) {
+    return bySlug.docs[0]
+  }
+
+  if (!/^\d+$/.test(normalizedParam)) {
+    return null
+  }
+
+  return payload.findByID({
+    collection: 'posts',
+    depth,
+    disableErrors: true,
+    id: normalizedParam,
+    overrideAccess,
+    user,
+  })
+}

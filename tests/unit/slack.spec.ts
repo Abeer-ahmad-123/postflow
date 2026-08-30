@@ -8,6 +8,9 @@ import {
 
 const originalSlackWebhookUrl = process.env.SLACK_WEBHOOK_URL
 const originalServerUrl = process.env.NEXT_PUBLIC_SERVER_URL
+const originalOpenStatusMention = process.env.SLACK_OPEN_STATUS_MENTION
+const originalReadyStatusMention = process.env.SLACK_READY_STATUS_MENTION
+const originalReviewStatusMention = process.env.SLACK_REVIEW_STATUS_MENTION
 
 const userA = { email: 'a@example.com', id: 1, name: 'User A' } as User
 
@@ -17,6 +20,7 @@ function makePost(overrides: Partial<Post> = {}) {
     id: 10,
     performedBy: userA,
     postText: 'Draft copy.',
+    slug: 'new-ai-model-released',
     status: 'open',
     topicLink: 'https://example.com/source',
     topicName: 'New AI Model Released',
@@ -25,7 +29,15 @@ function makePost(overrides: Partial<Post> = {}) {
   } as Post
 }
 
-function restoreEnv(key: 'NEXT_PUBLIC_SERVER_URL' | 'SLACK_WEBHOOK_URL', value?: string) {
+function restoreEnv(
+  key:
+    | 'NEXT_PUBLIC_SERVER_URL'
+    | 'SLACK_OPEN_STATUS_MENTION'
+    | 'SLACK_READY_STATUS_MENTION'
+    | 'SLACK_REVIEW_STATUS_MENTION'
+    | 'SLACK_WEBHOOK_URL',
+  value?: string,
+) {
   if (value === undefined) {
     delete process.env[key]
     return
@@ -37,6 +49,9 @@ function restoreEnv(key: 'NEXT_PUBLIC_SERVER_URL' | 'SLACK_WEBHOOK_URL', value?:
 afterEach(() => {
   restoreEnv('SLACK_WEBHOOK_URL', originalSlackWebhookUrl)
   restoreEnv('NEXT_PUBLIC_SERVER_URL', originalServerUrl)
+  restoreEnv('SLACK_OPEN_STATUS_MENTION', originalOpenStatusMention)
+  restoreEnv('SLACK_READY_STATUS_MENTION', originalReadyStatusMention)
+  restoreEnv('SLACK_REVIEW_STATUS_MENTION', originalReviewStatusMention)
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
@@ -88,10 +103,129 @@ describe('Slack notifications', () => {
     })
     expect(body.text).toBe('Postflow: Mark as Posted - New AI Model Released')
     expect(blocksText).toContain('*Mark as Posted*')
-    expect(blocksText).toContain('<https://postflow.example.com/posts/10|New AI Model Released>')
+    expect(blocksText).toContain('<https://postflow.example.com/posts/new-ai-model-released|New AI Model Released>')
     expect(blocksText).toContain('By User A')
     expect(blocksText).toContain('Status: Posted')
     expect(blocksText).toContain('Published on LinkedIn.')
+  })
+
+  it('mentions the open owner when a topic is added as open', async () => {
+    process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.test/services/T/B/C'
+    process.env.SLACK_OPEN_STATUS_MENTION = 'UABDUL123'
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+    }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await notifyTopicAddedToSlack({
+      post: makePost({ status: 'open' }),
+      user: userA,
+    })
+
+    const [, request] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    const body = JSON.parse(String(request.body))
+    const blocksText = JSON.stringify(body.blocks)
+
+    expect(body.text).toBe('Postflow: Topic Added <@UABDUL123> - New AI Model Released')
+    expect(blocksText).toContain('*Topic Added* <@UABDUL123>')
+  })
+
+  it('mentions Abdul Wadood when a post moves to open', async () => {
+    process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.test/services/T/B/C'
+    process.env.SLACK_OPEN_STATUS_MENTION = 'UABDUL123'
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+    }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await notifyPostStatusChangedToSlack({
+      post: makePost({ status: 'open' }),
+      user: userA,
+    })
+
+    const [, request] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    const body = JSON.parse(String(request.body))
+    const blocksText = JSON.stringify(body.blocks)
+
+    expect(body.text).toBe('Postflow: Send Back <@UABDUL123> - New AI Model Released')
+    expect(blocksText).toContain('<@UABDUL123>')
+  })
+
+  it('mentions Ghazifa Khan when a post moves to review', async () => {
+    process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.test/services/T/B/C'
+    process.env.SLACK_REVIEW_STATUS_MENTION = '<@UGHAZIFA123>'
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+    }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await notifyPostStatusChangedToSlack({
+      post: makePost({ status: 'review' }),
+      user: userA,
+    })
+
+    const [, request] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    const body = JSON.parse(String(request.body))
+    const blocksText = JSON.stringify(body.blocks)
+
+    expect(body.text).toBe('Postflow: Submit for Review <@UGHAZIFA123> - New AI Model Released')
+    expect(blocksText).toContain('<@UGHAZIFA123>')
+  })
+
+  it('mentions Ehtisham Ashraf when a post moves to ready', async () => {
+    process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.test/services/T/B/C'
+    process.env.SLACK_READY_STATUS_MENTION = 'UEHTISHAM123'
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+    }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await notifyPostStatusChangedToSlack({
+      post: makePost({ status: 'ready' }),
+      user: userA,
+    })
+
+    const [, request] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    const body = JSON.parse(String(request.body))
+    const blocksText = JSON.stringify(body.blocks)
+
+    expect(body.text).toBe('Postflow: Mark as Ready <@UEHTISHAM123> - New AI Model Released')
+    expect(blocksText).toContain('<@UEHTISHAM123>')
+  })
+
+  it('does not send plain-text names as fake mentions', async () => {
+    process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.test/services/T/B/C'
+    process.env.SLACK_OPEN_STATUS_MENTION = '@Abdul Wadood'
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+    }))
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    await notifyPostStatusChangedToSlack({
+      post: makePost({ status: 'open' }),
+      user: userA,
+    })
+
+    const [, request] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    const body = JSON.parse(String(request.body))
+    const blocksText = JSON.stringify(body.blocks)
+
+    expect(body.text).toBe('Postflow: Send Back - New AI Model Released')
+    expect(blocksText).not.toContain('@Abdul Wadood')
+    expect(warnSpy).toHaveBeenCalledWith(
+      'SLACK_OPEN_STATUS_MENTION must be a Slack member ID like U123ABC or a mention token like <@U123ABC>.',
+    )
   })
 
   it('logs Slack delivery failures without throwing', async () => {

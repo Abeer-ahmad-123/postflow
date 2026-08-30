@@ -18,13 +18,15 @@ export function WorkflowActions({
   postText?: null | string
   status: PostStatus
 }) {
-  const transitions = getAvailableTransitions(status)
+  const transitions = getAvailableTransitions(status).filter((transition) => transition !== 'posted')
   const { currentPostText, savedPostText } = usePostTextState(postText)
 
   if (transitions.length === 0) {
     return (
       <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-        {statusLabels[status]} is a terminal workflow state.
+        {status === 'ready'
+          ? 'This post is ready for Leo.'
+          : `${statusLabels[status]} is a terminal workflow state.`}
       </p>
     )
   }

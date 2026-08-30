@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import type { PostSearchParams } from '@/lib/posts/postQueries'
 
-function pageHref(params: PostSearchParams, page: number) {
+function pageHref(params: PostSearchParams, page: number, basePath: string) {
   const query = new URLSearchParams()
 
   Object.entries(params).forEach(([key, value]) => {
@@ -18,16 +18,18 @@ function pageHref(params: PostSearchParams, page: number) {
   }
 
   const suffix = query.toString()
-  return suffix ? `/posts?${suffix}` : '/posts'
+  return suffix ? `${basePath}?${suffix}` : basePath
 }
 
 export function Pagination({
+  basePath = '/posts',
   hasNextPage,
   hasPrevPage,
   page,
   params,
   totalPages,
 }: {
+  basePath?: string
   hasNextPage: boolean
   hasPrevPage: boolean
   page: number
@@ -42,7 +44,7 @@ export function Pagination({
       <div className="flex gap-2">
         {hasPrevPage ? (
           <Button asChild className="min-w-28 whitespace-nowrap" size="sm" variant="outline">
-            <Link href={pageHref(params, page - 1)}>
+            <Link href={pageHref(params, page - 1, basePath)}>
               <ChevronLeft className="h-4 w-4" />
               Previous
             </Link>
@@ -55,7 +57,7 @@ export function Pagination({
         )}
         {hasNextPage ? (
           <Button asChild className="min-w-24 whitespace-nowrap" size="sm" variant="outline">
-            <Link href={pageHref(params, page + 1)}>
+            <Link href={pageHref(params, page + 1, basePath)}>
               Next
               <ChevronRight className="h-4 w-4" />
             </Link>

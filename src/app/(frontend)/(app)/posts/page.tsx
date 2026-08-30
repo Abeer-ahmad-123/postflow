@@ -64,14 +64,20 @@ export default async function PostsPage({ searchParams }: { searchParams: Search
       </div>
 
       <PostFilters params={params} users={users.docs} />
-      <PostsTable
-        docs={posts.docs}
-        hasNextPage={posts.hasNextPage}
-        hasPrevPage={posts.hasPrevPage}
-        page={posts.page || 1}
-        params={params}
-        totalPages={posts.totalPages}
-      />
+      {posts.docs.length > 0 ? (
+        <PostsTable
+          docs={posts.docs}
+          hasNextPage={posts.hasNextPage}
+          hasPrevPage={posts.hasPrevPage}
+          page={posts.page || 1}
+          params={params}
+          totalPages={posts.totalPages}
+        />
+      ) : (
+        <p className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+          No posts found.
+        </p>
+      )}
     </div>
   )
 }

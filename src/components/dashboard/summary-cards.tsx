@@ -1,4 +1,4 @@
-import { FileText, Send, ShieldCheck, Sparkles, ThumbsDown, Timer } from 'lucide-react'
+import { CheckCheck, FileText, Send, Sparkles, ThumbsDown, Timer } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { statusLabels, type PostStatus } from '@/lib/workflow/postWorkflow'
@@ -7,7 +7,7 @@ const statusIcons = {
   declined: ThumbsDown,
   open: Timer,
   posted: Send,
-  proof_read: ShieldCheck,
+  ready: CheckCheck,
   review: Sparkles,
 } satisfies Record<PostStatus, typeof FileText>
 

@@ -1,4 +1,4 @@
-import { BarChart3, FilePlus2, ListChecks } from 'lucide-react'
+import { BarChart3, CheckCheck, FilePlus2, ListChecks } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
@@ -8,6 +8,11 @@ import { Button } from '@/components/ui/button'
 import type { User } from '@/payload-types'
 
 const navigation = [
+  {
+    href: '/posts/new',
+    icon: FilePlus2,
+    label: 'New Topic',
+  },
   {
     href: '/dashboard',
     icon: BarChart3,
@@ -19,13 +24,19 @@ const navigation = [
     label: 'Posts',
   },
   {
-    href: '/posts/new',
-    icon: FilePlus2,
-    label: 'New Topic',
+    href: '/ready-for-leo',
+    icon: CheckCheck,
+    label: 'Ready for Leo',
   },
 ]
 
-export function AppShell({ children, user }: { children: ReactNode; user: User }) {
+export function AppShell({
+  children,
+  user,
+}: {
+  children: ReactNode
+  user: User
+}) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-slate-200 bg-white lg:flex lg:flex-col">

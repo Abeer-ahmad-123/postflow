@@ -58,6 +58,7 @@ function CreatePostForm() {
     })
     const result = (await response.json().catch(() => null)) as
       | {
+          href?: string
           id?: string
           message?: string
           ok?: boolean
@@ -73,7 +74,7 @@ function CreatePostForm() {
     }
 
     toast.success(result.message || 'Topic created.')
-    router.replace(`/posts/${result.id}`)
+    router.replace(result.href || `/posts/${result.id}`)
   }
 
   return (
@@ -89,6 +90,7 @@ function CreatePostForm() {
 }
 
 function EditPostForm({ post }: { post: Post }) {
+  const router = useRouter()
   const toastKey = useRef('')
   const submittedPostText = useRef('')
   const { setCurrentPostText, setSavedPostText } = usePostTextState(post.postText)
@@ -107,10 +109,13 @@ function EditPostForm({ post }: { post: Post }) {
       setSavedPostText?.(submittedPostText.current)
 
       toast.success(state.message)
+      if (state.href) {
+        router.replace(state.href)
+      }
     } else {
       toast.error(state.message)
     }
-  }, [setCurrentPostText, setSavedPostText, state])
+  }, [router, setCurrentPostText, setSavedPostText, state])
 
   return (
     <form
@@ -172,7 +177,7 @@ function PostFormFields({
           onChange={(event) => onPostTextChange?.(event.target.value)}
           placeholder="Draft content can be added now or later."
         />
-        <p className="text-xs text-slate-500">Optional for open and declined topics. Required before review, proof read, or posted.</p>
+        <p className="text-xs text-slate-500">Optional for open and declined topics. Required before review, ready, or posted.</p>
       </div>
     </>
   )

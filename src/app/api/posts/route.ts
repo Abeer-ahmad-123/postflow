@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { getCurrentUser } from '@/lib/auth/getCurrentUser'
 import { getPayloadClient } from '@/lib/payload/getPayloadClient'
+import { postPath } from '@/lib/posts/postLinks'
 import { createTopic } from '@/lib/workflow/changePostStatus'
 import { createPostActionAudit } from '@/lib/workflow/postAudit'
 
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
+      href: postPath(post),
       id: postId,
       message: 'Topic created.',
       ok: true,

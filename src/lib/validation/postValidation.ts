@@ -25,6 +25,10 @@ export const workflowActionSchema = z.object({
   status: z.enum(statuses),
 })
 
+export const postCommentSchema = z.object({
+  comment: z.string().trim().min(1, 'Comment is required.').max(800, 'Comments must be 800 characters or fewer.'),
+})
+
 export function validateURL(value: unknown) {
   const result = z.string().trim().url().safeParse(value)
   return result.success || 'Enter a valid URL, including https://.'

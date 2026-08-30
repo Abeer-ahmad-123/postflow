@@ -156,9 +156,10 @@ export interface User {
 export interface Post {
   id: number;
   topicName: string;
+  slug: string;
   topicLink: string;
   postText?: string | null;
-  status: 'open' | 'review' | 'proof_read' | 'posted' | 'declined';
+  status: 'open' | 'review' | 'ready' | 'posted' | 'declined';
   performedBy: number | User;
   updatedAt: string;
   createdAt: string;
@@ -170,7 +171,7 @@ export interface Post {
 export interface PostAction {
   id: number;
   post: number | Post;
-  action: 'open' | 'review' | 'proof_read' | 'posted' | 'declined';
+  action: 'open' | 'review' | 'ready' | 'posted' | 'declined';
   performedBy: number | User;
   performedAt: string;
   comment?: string | null;
@@ -285,6 +286,7 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface PostsSelect<T extends boolean = true> {
   topicName?: T;
+  slug?: T;
   topicLink?: T;
   postText?: T;
   status?: T;

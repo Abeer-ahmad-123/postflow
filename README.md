@@ -35,9 +35,12 @@ PAYLOAD_SECRET=long-random-secret
 NEXT_PUBLIC_SERVER_URL=http://localhost:3000
 POSTFLOW_SIGNUP_INVITE_CODE=private-team-code
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+SLACK_OPEN_STATUS_MENTION=U...
+SLACK_REVIEW_STATUS_MENTION=U...
+SLACK_READY_STATUS_MENTION=U...
 ```
 
-`SLACK_WEBHOOK_URL` is optional. When set to a Slack incoming webhook URL, Postflow sends Slack notifications when a topic is added, submitted for review, proof read, sent back, declined, or marked as posted.
+`SLACK_WEBHOOK_URL` is optional. When set to a Slack incoming webhook URL, Postflow sends Slack notifications when a topic is added, submitted for review, sent back, declined, marked as ready, or marked as posted. Open status changes mention the Slack member configured in `SLACK_OPEN_STATUS_MENTION`; review status changes mention the member configured in `SLACK_REVIEW_STATUS_MENTION`; ready status changes mention the member configured in `SLACK_READY_STATUS_MENTION` for Ehtisham Ashraf. Use Slack member IDs like `U123ABC` or mention tokens like `<@U123ABC>`; plain names like `@Abdul Wadood` will not trigger native Slack pings.
 
 4. Generate Payload types:
 
@@ -85,7 +88,7 @@ Optional development seed:
 npm run seed
 ```
 
-This creates User A, User B, User C, and User D with password `Postflow123!`, then creates sample Open, Review, Proof Read, Posted, and Declined records through the real workflow service.
+This creates User A, User B, User C, and User D with password `Postflow123!`, then creates sample Open, Review, Ready, Posted, and Declined records through the real workflow service.
 
 ## Workflow
 
@@ -96,13 +99,15 @@ Allowed transitions:
 - `open -> review`
 - `open -> declined`
 - `review -> open`
-- `review -> proof_read`
+- `review -> ready`
 - `review -> declined`
-- `proof_read -> review`
-- `proof_read -> posted`
-- `proof_read -> declined`
+- `ready -> review`
+- `ready -> declined`
+- `ready -> posted`
 
 `declined` and `posted` are terminal by default.
+
+Adding a comment creates an audit entry and moves the post one step backward when possible: `posted -> ready`, `ready -> review`, and `review -> open`.
 
 All status changes go through `changePostStatus`. The browser never controls `performedBy`, audit performer, audit timestamp, or transition validity.
 

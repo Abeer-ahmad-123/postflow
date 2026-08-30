@@ -1,4 +1,4 @@
-export const statuses = ['open', 'review', 'proof_read', 'posted', 'declined'] as const
+export const statuses = ['open', 'review', 'ready', 'posted', 'declined'] as const
 
 export type PostStatus = (typeof statuses)[number]
 
@@ -6,7 +6,7 @@ export const statusLabels: Record<PostStatus, string> = {
   declined: 'Declined',
   open: 'Open',
   posted: 'Posted',
-  proof_read: 'Proof Read',
+  ready: 'Ready',
   review: 'Review',
 }
 
@@ -14,7 +14,7 @@ export const statusTone: Record<PostStatus, string> = {
   declined: 'border-red-200 bg-red-50 text-red-700',
   open: 'border-sky-200 bg-sky-50 text-sky-700',
   posted: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  proof_read: 'border-violet-200 bg-violet-50 text-violet-700',
+  ready: 'border-teal-200 bg-teal-50 text-teal-700',
   review: 'border-amber-200 bg-amber-50 text-amber-700',
 }
 
@@ -22,23 +22,29 @@ export const workflowTransitions: Record<PostStatus, PostStatus[]> = {
   declined: [],
   open: ['review', 'declined'],
   posted: [],
-  proof_read: ['review', 'posted', 'declined'],
-  review: ['open', 'proof_read', 'declined'],
+  ready: ['review', 'declined', 'posted'],
+  review: ['open', 'ready', 'declined'],
 }
 
-export const editableStatuses: readonly PostStatus[] = ['open', 'review', 'proof_read']
+export const editableStatuses: readonly PostStatus[] = ['open', 'review']
 
 export const workflowActionLabels: Partial<Record<PostStatus, string>> = {
   declined: 'Decline',
   open: 'Send Back',
   posted: 'Mark as Posted',
-  proof_read: 'Proof Read',
+  ready: 'Mark as Ready',
   review: 'Submit for Review',
 }
 
 export const confirmationStatuses: readonly PostStatus[] = ['posted', 'declined']
 
-export const postContentRequiredStatuses: readonly PostStatus[] = ['review', 'proof_read', 'posted']
+export const postContentRequiredStatuses: readonly PostStatus[] = ['review', 'ready', 'posted']
+
+export const commentRollbackTransitions: Partial<Record<PostStatus, PostStatus>> = {
+  posted: 'ready',
+  ready: 'review',
+  review: 'open',
+}
 
 export function isPostStatus(value: unknown): value is PostStatus {
   return statuses.includes(value as PostStatus)
@@ -58,6 +64,10 @@ export function canEditPostContent(status: PostStatus) {
 
 export function requiresConfirmation(status: PostStatus) {
   return confirmationStatuses.includes(status)
+}
+
+export function getCommentRollbackStatus(status: PostStatus) {
+  return commentRollbackTransitions[status]
 }
 
 export function statusRequiresPostContent(status: PostStatus) {

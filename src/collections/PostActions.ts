@@ -1,8 +1,61 @@
 import type { CollectionBeforeChangeHook, CollectionConfig } from 'payload'
 
 import { authenticated, deny } from './access'
+import { relationshipID } from '@/lib/utils'
 
-const setAuditFields: CollectionBeforeChangeHook = ({ data, operation, req }) => {
+const commentWriteFields = new Set(['comment'])
+const immutableAuditFields = ['action', 'performedAt', 'performedBy', 'post'] as const
+const systemPassthroughFields = new Set(['createdAt', 'id', 'updatedAt'])
+
+function equivalentAuditFieldValue(
+  field: (typeof immutableAuditFields)[number],
+  nextValue: unknown,
+  originalValue: unknown,
+) {
+  if (field === 'performedBy' || field === 'post') {
+    return String(relationshipID(nextValue)) === String(relationshipID(originalValue))
+  }
+
+  return nextValue === originalValue
+}
+
+const setAuditFields: CollectionBeforeChangeHook = ({ context, data, operation, originalDoc, req }) => {
+  if (operation === 'update' && context?.internalCommentWrite) {
+    if (!req.user) {
+      throw new Error('You must be signed in to update a comment.')
+    }
+
+    const invalidField = Object.keys(data).find((key) => {
+      if (commentWriteFields.has(key) || systemPassthroughFields.has(key)) {
+        return false
+      }
+
+      if (!immutableAuditFields.includes(key as (typeof immutableAuditFields)[number])) {
+        return true
+      }
+
+      const field = key as (typeof immutableAuditFields)[number]
+      return !equivalentAuditFieldValue(field, data[key], originalDoc?.[field])
+    })
+
+    if (invalidField) {
+      throw new Error('Only comment text can be edited.')
+    }
+
+    if (String(relationshipID(originalDoc?.performedBy)) !== String(req.user.id)) {
+      throw new Error('Only the comment owner can edit this comment.')
+    }
+
+    return {
+      ...data,
+      action: originalDoc?.action,
+      comment: typeof data.comment === 'string' ? data.comment.trim() : null,
+      performedAt: originalDoc?.performedAt,
+      performedBy: originalDoc?.performedBy,
+      post: originalDoc?.post,
+    }
+  }
+
   if (operation !== 'create') {
     throw new Error('Post action history is append-only.')
   }
@@ -51,7 +104,7 @@ export const PostActions: CollectionConfig = {
       options: [
         { label: 'Open', value: 'open' },
         { label: 'Review', value: 'review' },
-        { label: 'Proof Read', value: 'proof_read' },
+        { label: 'Ready', value: 'ready' },
         { label: 'Posted', value: 'posted' },
         { label: 'Declined', value: 'declined' },
       ],

@@ -31,10 +31,12 @@ import {
 
 export function WorkflowActionButton({
   disabledReason,
+  labelOverride,
   postId,
   status,
 }: {
   disabledReason?: string
+  labelOverride?: string
   postId: string
   status: PostStatus
 }) {
@@ -43,7 +45,7 @@ export function WorkflowActionButton({
   const [open, setOpen] = useState(false)
   const action = changeStatusFormAction.bind(null, postId)
   const [state, formAction, pending] = useActionState<ActionState, FormData>(action, initialActionState)
-  const label = workflowActionLabels[status] || statusLabels[status]
+  const label = labelOverride || workflowActionLabels[status] || statusLabels[status]
   const confirm = requiresConfirmation(status)
 
   useEffect(() => {

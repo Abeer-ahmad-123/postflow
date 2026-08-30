@@ -5,11 +5,18 @@ import {
   notifyPostStatusChangedToSlack,
   notifyTopicAddedToSlack,
 } from '@/lib/notifications/slack'
-import { createTopicSchema, editPostSchema, validatePostContentForStatus } from '@/lib/validation/postValidation'
+import { slugifyPostName } from '@/lib/posts/postLinks'
+import {
+  createTopicSchema,
+  editPostSchema,
+  postCommentSchema,
+  validatePostContentForStatus,
+} from '@/lib/validation/postValidation'
 import { createPostActionAudit } from '@/lib/workflow/postAudit'
 import {
   canEditPostContent,
   canTransition,
+  getCommentRollbackStatus,
   isPostStatus,
   statusLabels,
   type PostStatus,
@@ -56,6 +63,7 @@ export async function createTopic({
     data: {
       performedBy: currentUser.id,
       postText: parsed.postText,
+      slug: slugifyPostName(parsed.topicName),
       status: 'open',
       topicLink: parsed.topicLink,
       topicName: parsed.topicName,
@@ -98,7 +106,7 @@ export async function updatePostContent({
   })
 
   if (!canEditPostContent(existing.status)) {
-    throw new WorkflowError('Posted and declined records are finalized and cannot be edited.')
+    throw new WorkflowError('Ready, posted, and declined records are finalized and cannot be edited.')
   }
 
   return payload.update({
@@ -188,6 +196,83 @@ export async function changePostStatus({
 
   await notifyPostStatusChangedToSlack({
     comment,
+    post: updatedPost,
+    user: currentUser,
+  })
+
+  return updatedPost as Post
+}
+
+export async function addPostComment({
+  input,
+  payload,
+  postId,
+  user,
+}: {
+  input: unknown
+  payload: Payload
+  postId: number | string
+  user?: null | WorkflowUser
+}) {
+  const currentUser = requireUser(user)
+  const parsed = postCommentSchema.parse(input)
+  const post = await payload.findByID({
+    collection: 'posts',
+    depth: 0,
+    id: postId,
+    overrideAccess: false,
+    user: currentUser as User,
+  })
+  const rollbackStatus = getCommentRollbackStatus(post.status)
+
+  if (!rollbackStatus) {
+    await createPostActionAudit({
+      action: post.status,
+      comment: parsed.comment,
+      payload,
+      postId: post.id,
+      req: {
+        user: currentUser as User,
+      },
+      user: currentUser as User,
+    })
+
+    return post as Post
+  }
+
+  validatePostContentForStatus(rollbackStatus, post.postText)
+
+  const updatedPost = await payload.update({
+    collection: 'posts',
+    context: {
+      workflowStatusChange: true,
+    },
+    data: {
+      performedBy: currentUser.id,
+      status: rollbackStatus,
+    },
+    depth: 0,
+    id: post.id,
+    overrideAccess: false,
+    req: {
+      user: currentUser as User,
+    },
+    user: currentUser as User,
+  })
+
+  await createPostActionAudit({
+    action: rollbackStatus,
+    comment: parsed.comment,
+    payload,
+    postId: post.id,
+    req: {
+      user: currentUser as User,
+    },
+    user: currentUser as User,
+  })
+
+  await notifyPostStatusChangedToSlack({
+    comment: parsed.comment,
     post: updatedPost,
     user: currentUser,
   })
