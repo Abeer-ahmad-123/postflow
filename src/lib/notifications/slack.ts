@@ -33,6 +33,10 @@ const fallbackActionLabels: Record<PostStatus, string> = {
   ready: 'Mark as Ready',
   review: 'Submit for Review',
 }
+const slackActionLabels: Partial<Record<PostStatus, string>> = {
+  ready: 'Post is Ready For Leo',
+  review: 'Post Submit for Review',
+}
 const slackRequestTimeoutMs = 5000
 const slackMemberIdPattern = /^[UW][A-Z0-9]+$/i
 const slackMemberMentionPattern = /^<@[UW][A-Z0-9]+>$/i
@@ -105,6 +109,10 @@ function actorName(user: SlackNotificationUser) {
 }
 
 function actionLabel(status: PostStatus) {
+  if (slackActionLabels[status]) {
+    return slackActionLabels[status]
+  }
+
   return workflowActionLabels[status] || fallbackActionLabels[status] || statusLabels[status]
 }
 

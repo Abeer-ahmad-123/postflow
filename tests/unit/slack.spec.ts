@@ -174,7 +174,7 @@ describe('Slack notifications', () => {
     const body = JSON.parse(String(request.body))
     const blocksText = JSON.stringify(body.blocks)
 
-    expect(body.text).toBe('Postflow: Submit for Review <@UGHAZIFA123> - New AI Model Released')
+    expect(body.text).toBe('Postflow: Post Submit for Review <@UGHAZIFA123> - New AI Model Released')
     expect(blocksText).toContain('<@UGHAZIFA123>')
   })
 
@@ -197,7 +197,7 @@ describe('Slack notifications', () => {
     const body = JSON.parse(String(request.body))
     const blocksText = JSON.stringify(body.blocks)
 
-    expect(body.text).toBe('Postflow: Mark as Ready <@UEHTISHAM123> - New AI Model Released')
+    expect(body.text).toBe('Postflow: Post is Ready For Leo <@UEHTISHAM123> - New AI Model Released')
     expect(blocksText).toContain('<@UEHTISHAM123>')
   })
 
