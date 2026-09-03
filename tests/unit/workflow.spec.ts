@@ -547,6 +547,26 @@ describe('post workflow business rules', () => {
     )
   })
 
+  it('allows posted posts to move back to ready', async () => {
+    const payload = mockPayload(makePost({ postText: 'Posted copy.', status: 'posted' }))
+
+    await changePostStatus({
+      newStatus: 'ready',
+      payload,
+      postId: 10,
+      user: userB,
+    })
+
+    expect(payload.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: {
+          performedBy: userB.id,
+          status: 'ready',
+        },
+      }),
+    )
+  })
+
   it.each(['review', 'declined'] as const)('allows ready posts to move to %s', async (newStatus) => {
     const payload = mockPayload(makePost({ postText: 'Draft copy.', status: 'ready' }))
 

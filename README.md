@@ -104,8 +104,9 @@ Allowed transitions:
 - `ready -> review`
 - `ready -> declined`
 - `ready -> posted`
+- `posted -> ready`
 
-`declined` and `posted` are terminal by default.
+`declined` is terminal by default.
 
 Adding a comment creates an audit entry and moves the post one step backward when possible: `posted -> ready`, `ready -> review`, and `review -> open`.
 

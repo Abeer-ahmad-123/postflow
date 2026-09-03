@@ -21,7 +21,7 @@ export const statusTone: Record<PostStatus, string> = {
 export const workflowTransitions: Record<PostStatus, PostStatus[]> = {
   declined: [],
   open: ['review', 'declined'],
-  posted: [],
+  posted: ['ready'],
   ready: ['review', 'declined', 'posted'],
   review: ['open', 'ready', 'declined'],
 }

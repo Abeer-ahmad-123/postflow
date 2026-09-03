@@ -6,24 +6,30 @@ import { WorkflowActionButton } from '@/components/posts/workflow-action-button'
 import { Button } from '@/components/ui/button'
 import { postPath } from '@/lib/posts/postLinks'
 import type { PostSearchParams } from '@/lib/posts/postQueries'
-import { getTransitionBlockReason } from '@/lib/workflow/postWorkflow'
+import { getTransitionBlockReason, type PostStatus } from '@/lib/workflow/postWorkflow'
 import { formatDateTime, userName } from '@/lib/utils'
 import type { Post } from '@/payload-types'
+
+type ReadyForLeoStatus = Extract<PostStatus, 'posted' | 'ready'>
 
 export function ReadyForLeoTable({
   docs,
   hasNextPage,
   hasPrevPage,
   page,
+  status,
   totalPages,
 }: {
   docs: Post[]
   hasNextPage: boolean
   hasPrevPage: boolean
   page: number
+  status: ReadyForLeoStatus
   totalPages: number
 }) {
-  const params = {} satisfies PostSearchParams
+  const params = (status === 'posted' ? { status } : {}) satisfies PostSearchParams
+  const emptyMessage = status === 'posted' ? 'No posted posts yet.' : 'No posts are ready for Leo.'
+  const performerLabel = status === 'posted' ? 'Posted By' : 'Ready By'
 
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
@@ -33,7 +39,7 @@ export function ReadyForLeoTable({
             <tr>
               <th className="px-4 py-3 font-medium">Topic Name</th>
               <th className="px-4 py-3 font-medium">Topic Link</th>
-              <th className="px-4 py-3 font-medium">Ready By</th>
+              <th className="px-4 py-3 font-medium">{performerLabel}</th>
               <th className="px-4 py-3 font-medium">Updated At</th>
               <th className="px-4 py-3 text-right font-medium">Actions</th>
             </tr>
@@ -42,7 +48,7 @@ export function ReadyForLeoTable({
             {docs.length === 0 ? (
               <tr>
                 <td className="px-4 py-10 text-center text-slate-500" colSpan={5}>
-                  No posts are ready for Leo.
+                  {emptyMessage}
                 </td>
               </tr>
             ) : (
@@ -77,13 +83,23 @@ export function ReadyForLeoTable({
                           <ArrowUpRight className="h-4 w-4" />
                         </Link>
                       </Button>
-                      <WorkflowActionButton
-                        disabledReason={getTransitionBlockReason('review', post.postText)}
-                        labelOverride="Send Back"
-                        postId={String(post.id)}
-                        status="review"
-                      />
-                      <WorkflowActionButton postId={String(post.id)} status="posted" />
+                      {status === 'posted' ? (
+                        <WorkflowActionButton
+                          disabledReason={getTransitionBlockReason('ready', post.postText)}
+                          postId={String(post.id)}
+                          status="ready"
+                        />
+                      ) : (
+                        <>
+                          <WorkflowActionButton
+                            disabledReason={getTransitionBlockReason('review', post.postText)}
+                            labelOverride="Send Back"
+                            postId={String(post.id)}
+                            status="review"
+                          />
+                          <WorkflowActionButton postId={String(post.id)} status="posted" />
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
