@@ -8,6 +8,11 @@ const dirname = path.dirname(__filename)
 
 const nextConfig: NextConfig = {
   agentRules: false,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '31mb',
+    },
+  },
   images: {
     localPatterns: [
       {

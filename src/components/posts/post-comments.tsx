@@ -236,7 +236,6 @@ function EditCommentForm({
         className="min-h-20 resize-none rounded-lg border-slate-200 bg-white"
         defaultValue={comment}
         id={`edit-comment-${actionId}`}
-        maxLength={800}
         name="comment"
         required
       />

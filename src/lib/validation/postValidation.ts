@@ -21,12 +21,12 @@ export const createTopicSchema = z.object({
 export const editPostSchema = createTopicSchema
 
 export const workflowActionSchema = z.object({
-  comment: z.string().trim().max(800, 'Comments must be 800 characters or fewer.').optional(),
+  comment: z.string().trim().optional(),
   status: z.enum(statuses),
 })
 
 export const postCommentSchema = z.object({
-  comment: z.string().trim().min(1, 'Comment is required.').max(800, 'Comments must be 800 characters or fewer.'),
+  comment: z.string().trim().min(1, 'Comment is required.'),
 })
 
 export function validateURL(value: unknown) {

@@ -9,6 +9,7 @@ import { getCurrentUser } from '@/lib/auth/getCurrentUser'
 import type { ActionState } from '@/lib/forms/actionState'
 import { getFormString } from '@/lib/utils'
 import { getPayloadClient } from '@/lib/payload/getPayloadClient'
+import { deleteUploadedImages, postImageFormInput, uploadPostImages } from '@/lib/posts/postImages'
 import { postPath } from '@/lib/posts/postLinks'
 import {
   createPostActionAudit,
@@ -63,12 +64,22 @@ export async function createTopicFormAction(
 ): Promise<ActionState> {
   let postHref = '/posts'
   let postId: string | undefined
+  let uploadedImages: Awaited<ReturnType<typeof uploadPostImages>> = []
+  let payload: Awaited<ReturnType<typeof getPayloadClient>> | undefined
 
   try {
-    const payload = await getPayloadClient()
+    payload = await getPayloadClient()
     const user = await getCurrentUser(payload)
+    const imageInput = postImageFormInput(formData)
+
+    if (!user) {
+      throw new Error('You must be signed in to perform this action.')
+    }
+
+    uploadedImages = await uploadPostImages({ files: imageInput.files, payload, user })
     const post = await createTopic({
       deferInitialAudit: true,
+      imageIds: [...imageInput.newImageIds, ...uploadedImages.map((image) => image.id)],
       input: postFormInput(formData),
       payload,
       user,
@@ -78,11 +89,13 @@ export async function createTopicFormAction(
     postHref = postPath(post)
 
     if (user) {
+      const auditPayload = payload
+
       after(async () => {
         try {
           await createPostActionAudit({
             action: 'open',
-            payload,
+            payload: auditPayload,
             performedAt: post.createdAt,
             postId: post.id,
             user,
@@ -96,6 +109,11 @@ export async function createTopicFormAction(
     }
   } catch (error) {
     console.error('Unable to create topic', error)
+
+    if (payload && uploadedImages.length > 0) {
+      await deleteUploadedImages({ images: uploadedImages, payload })
+    }
+
     return actionError(error)
   }
 
@@ -107,14 +125,26 @@ export async function updatePostFormAction(
   _previousState: ActionState,
   formData: FormData,
 ): Promise<ActionState> {
+  let uploadedImages: Awaited<ReturnType<typeof uploadPostImages>> = []
+  let payload: Awaited<ReturnType<typeof getPayloadClient>> | undefined
+
   try {
-    const payload = await getPayloadClient()
+    payload = await getPayloadClient()
     const user = await getCurrentUser(payload)
+    const imageInput = postImageFormInput(formData)
+
+    if (!user) {
+      throw new Error('You must be signed in to perform this action.')
+    }
+
+    uploadedImages = await uploadPostImages({ files: imageInput.files, payload, user })
 
     const post = await updatePostContent({
       input: postFormInput(formData),
+      newImageIds: [...imageInput.newImageIds, ...uploadedImages.map((image) => image.id)],
       payload,
       postId,
+      retainedImageIds: imageInput.retainedImageIds,
       user,
     })
 
@@ -130,6 +160,11 @@ export async function updatePostFormAction(
     }
   } catch (error) {
     console.error(`Unable to update post ${postId}`, error)
+
+    if (payload && uploadedImages.length > 0) {
+      await deleteUploadedImages({ images: uploadedImages, payload })
+    }
+
     return actionError(error)
   }
 }

@@ -1,4 +1,10 @@
-import type { CollectionAfterChangeHook, CollectionBeforeChangeHook, CollectionConfig, Payload, Where } from 'payload'
+import type {
+  CollectionAfterChangeHook,
+  CollectionBeforeChangeHook,
+  CollectionConfig,
+  Payload,
+  Where,
+} from 'payload'
 
 import { authenticated, deny } from './access'
 import type { User } from '@/payload-types'
@@ -8,7 +14,7 @@ import { relationshipID } from '@/lib/utils'
 import { canEditPostContent, isPostStatus } from '@/lib/workflow/postWorkflow'
 import { validatePostContentForStatus, validateURL } from '@/lib/validation/postValidation'
 
-const topicFields = ['topicName', 'topicLink', 'postText'] as const
+const topicFields = ['topicName', 'topicLink', 'postText', 'images'] as const
 const maxSlugAttempts = 100
 
 function hasOwn(data: object, key: string) {
@@ -93,11 +99,11 @@ const enforcePostRules: CollectionBeforeChangeHook = async ({
   }
 
   const workflowStatusChange = Boolean(context?.workflowStatusChange)
-  const statusChanged =
-    hasOwn(nextData, 'status') && nextData.status !== originalDoc?.status
+  const statusChanged = hasOwn(nextData, 'status') && nextData.status !== originalDoc?.status
   const performedByChanged =
     hasOwn(nextData, 'performedBy') &&
-    String(relationshipID(nextData.performedBy)) !== String(relationshipID(originalDoc?.performedBy))
+    String(relationshipID(nextData.performedBy)) !==
+      String(relationshipID(originalDoc?.performedBy))
 
   if (!workflowStatusChange && statusChanged) {
     throw new Error('Status changes must use the workflow service.')
@@ -126,14 +132,16 @@ const enforcePostRules: CollectionBeforeChangeHook = async ({
     return nextData
   }
 
-  const topicNameChanged = hasOwn(nextData, 'topicName') && nextData.topicName !== originalDoc?.topicName
+  const topicNameChanged =
+    hasOwn(nextData, 'topicName') && nextData.topicName !== originalDoc?.topicName
   const slugProvided = hasOwn(nextData, 'slug')
 
   if (topicNameChanged || slugProvided || !originalDoc?.slug) {
     nextData.slug = await uniquePostSlug({
       currentPostId: originalDoc?.id,
       payload: req.payload,
-      topicName: typeof nextData.topicName === 'string' ? nextData.topicName : originalDoc?.topicName || '',
+      topicName:
+        typeof nextData.topicName === 'string' ? nextData.topicName : originalDoc?.topicName || '',
     })
   }
 
@@ -203,6 +211,16 @@ export const Posts: CollectionConfig = {
     {
       name: 'postText',
       type: 'textarea',
+    },
+    {
+      name: 'images',
+      type: 'upload',
+      admin: {
+        description: 'Upload up to 3 images for this post.',
+      },
+      hasMany: true,
+      maxRows: 3,
+      relationTo: 'media',
     },
     {
       name: 'status',

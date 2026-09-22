@@ -45,7 +45,6 @@ export function AddPostCommentForm({ postId }: { postId: string }) {
         <Textarea
           className="min-h-20 resize-none rounded-lg border-slate-200 bg-white"
           id={`post-comment-${postId}`}
-          maxLength={800}
           name="comment"
           placeholder="Add a comment..."
           required

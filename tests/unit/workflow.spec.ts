@@ -440,6 +440,24 @@ describe('post workflow business rules', () => {
     )
   })
 
+  it('accepts comments longer than the previous 800-character limit', async () => {
+    const payload = mockPayload()
+    const comment = 'A'.repeat(1_000)
+
+    await addPostComment({
+      input: { comment },
+      payload,
+      postId: 10,
+      user: userA,
+    })
+
+    expect(payload.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ comment }),
+      }),
+    )
+  })
+
   it('deletes a comment by clearing the owner comment text', async () => {
     const payload = mockCommentPayload()
 

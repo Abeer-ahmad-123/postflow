@@ -1,10 +1,7 @@
 import type { Payload } from 'payload'
 
 import type { Post, User } from '@/payload-types'
-import {
-  notifyPostStatusChangedToSlack,
-  notifyTopicAddedToSlack,
-} from '@/lib/notifications/slack'
+import { notifyPostStatusChangedToSlack, notifyTopicAddedToSlack } from '@/lib/notifications/slack'
 import { slugifyPostName } from '@/lib/posts/postLinks'
 import {
   createTopicSchema,
@@ -41,11 +38,13 @@ function requireUser(user?: null | WorkflowUser): WorkflowUser {
 
 export async function createTopic({
   deferInitialAudit,
+  imageIds = [],
   input,
   payload,
   user,
 }: {
   deferInitialAudit?: boolean
+  imageIds?: number[]
   input: unknown
   payload: Payload
   user?: null | WorkflowUser
@@ -61,6 +60,7 @@ export async function createTopic({
         }
       : undefined,
     data: {
+      images: imageIds,
       performedBy: currentUser.id,
       postText: parsed.postText,
       slug: slugifyPostName(parsed.topicName),
@@ -86,13 +86,17 @@ export async function createTopic({
 
 export async function updatePostContent({
   input,
+  newImageIds,
   payload,
   postId,
+  retainedImageIds,
   user,
 }: {
   input: unknown
+  newImageIds?: number[]
   payload: Payload
   postId: number | string
+  retainedImageIds?: number[]
   user?: null | WorkflowUser
 }) {
   const currentUser = requireUser(user)
@@ -106,12 +110,32 @@ export async function updatePostContent({
   })
 
   if (!canEditPostContent(existing.status)) {
-    throw new WorkflowError('Ready, posted, and declined records are finalized and cannot be edited.')
+    throw new WorkflowError(
+      'Ready, posted, and declined records are finalized and cannot be edited.',
+    )
+  }
+
+  const shouldUpdateImages = retainedImageIds !== undefined || newImageIds !== undefined
+  const nextImageIds = shouldUpdateImages
+    ? [...(retainedImageIds || []), ...(newImageIds || [])]
+    : undefined
+
+  if (retainedImageIds) {
+    const existingImageIds = new Set(
+      (existing.images || []).map((image) => String(typeof image === 'object' ? image.id : image)),
+    )
+
+    for (const imageId of retainedImageIds) {
+      if (!existingImageIds.has(String(imageId))) {
+        throw new WorkflowError('The selected images are invalid.')
+      }
+    }
   }
 
   return payload.update({
     collection: 'posts',
     data: {
+      ...(nextImageIds ? { images: nextImageIds } : {}),
       postText: parsed.postText,
       topicLink: parsed.topicLink,
       topicName: parsed.topicName,

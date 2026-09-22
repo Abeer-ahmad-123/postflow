@@ -55,7 +55,11 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
           </CardHeader>
           <CardContent>
             {editable ? (
-              <PostForm mode="edit" post={post} />
+              <PostForm
+                mode="edit"
+                post={post}
+                useBlobUploads={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}
+              />
             ) : (
               <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
                 Ready, posted, and declined records are finalized.

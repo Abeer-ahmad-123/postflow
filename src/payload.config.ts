@@ -1,11 +1,13 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
 import { Users } from './collections/Users'
+import { Media } from './collections/Media'
 import { Posts } from './collections/Posts'
 import { PostActions } from './collections/PostActions'
 
@@ -42,7 +44,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Posts, PostActions],
+  collections: [Users, Media, Posts, PostActions],
   cors: [process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000'],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
@@ -56,5 +58,14 @@ export default buildConfig({
     push: false,
   }),
   sharp,
-  plugins: [],
+  plugins: [
+    vercelBlobStorage({
+      addRandomSuffix: true,
+      clientUploads: true,
+      collections: {
+        media: true,
+      },
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    }),
+  ],
 })
