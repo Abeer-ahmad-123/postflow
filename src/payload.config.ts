@@ -72,7 +72,11 @@ export default buildConfig({
         },
       },
       collections: {
-        media: true,
+        // Images are public and should be served by UploadThing directly. This also
+        // prevents image views from consuming Vercel function and bandwidth usage.
+        media: {
+          disablePayloadAccessControl: true,
+        },
       },
       enabled: uploadThingStorageEnabled,
       options: {
