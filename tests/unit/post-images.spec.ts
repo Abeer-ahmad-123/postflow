@@ -25,15 +25,24 @@ describe('post image validation', () => {
     expect(() => postImageFormInput(formData)).toThrow('You can upload up to 3 images.')
   })
 
-  it('accepts media IDs created by direct Blob uploads', () => {
+  it('accepts media IDs created by direct UploadThing uploads', () => {
     const formData = new FormData()
-    formData.set('newImageIds', JSON.stringify(['20', '21']))
+    formData.set('newImageIds', JSON.stringify([20, 21]))
     formData.set('retainedImageIds', JSON.stringify(['10']))
 
     expect(postImageFormInput(formData)).toMatchObject({
       newImageIds: [20, 21],
       retainedImageIds: [10],
     })
+  })
+
+  it('rejects malformed media IDs', () => {
+    const formData = new FormData()
+    formData.set('newImageIds', JSON.stringify([20, -1, 2.5]))
+
+    expect(() => postImageFormInput(formData)).toThrow(
+      'The selected images are invalid. Please refresh and try again.',
+    )
   })
 
   it('rejects unsupported files', () => {

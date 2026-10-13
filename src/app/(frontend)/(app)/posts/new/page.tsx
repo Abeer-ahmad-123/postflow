@@ -1,5 +1,6 @@
 import { PostForm } from '@/components/posts/post-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { isUploadThingStorageConfigured } from '@/lib/storage/uploadthing'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ export default function NewPostPage() {
           <CardDescription>Post text can stay empty until the topic moves forward.</CardDescription>
         </CardHeader>
         <CardContent>
-          <PostForm mode="create" useBlobUploads={Boolean(process.env.BLOB_READ_WRITE_TOKEN)} />
+          <PostForm mode="create" useDirectUploads={isUploadThingStorageConfigured()} />
         </CardContent>
       </Card>
     </div>

@@ -2,6 +2,7 @@ import * as migration_20260824_121940 from './20260824_121940'
 import * as migration_20260830_000001_ready_slugs from './20260830_000001_ready_slugs'
 import * as migration_20260830_000002_remove_proof_read from './20260830_000002_remove_proof_read'
 import * as migration_20260922_081300_add_post_images from './20260922_081300_add_post_images'
+import * as migration_20261013_081436 from './20261013_081436'
 
 export const migrations = [
   {
@@ -23,5 +24,10 @@ export const migrations = [
     up: migration_20260922_081300_add_post_images.up,
     down: migration_20260922_081300_add_post_images.down,
     name: '20260922_081300_add_post_images',
+  },
+  {
+    up: migration_20261013_081436.up,
+    down: migration_20261013_081436.down,
+    name: '20261013_081436',
   },
 ]

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getPayloadClient } from '@/lib/payload/getPayloadClient'
 import { editPostPath, postPath, postRouteSegment } from '@/lib/posts/postLinks'
 import { getPostByRouteParam } from '@/lib/posts/postQueries'
+import { isUploadThingStorageConfigured } from '@/lib/storage/uploadthing'
 import { canEditPostContent } from '@/lib/workflow/postWorkflow'
 
 export const dynamic = 'force-dynamic'
@@ -58,7 +59,7 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
               <PostForm
                 mode="edit"
                 post={post}
-                useBlobUploads={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}
+                useDirectUploads={isUploadThingStorageConfigured()}
               />
             ) : (
               <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">

@@ -198,7 +198,7 @@ function PostImages({ images = [] }: { images?: Post['images'] }) {
             rel="noreferrer"
             target="_blank"
           >
-            {/* The direct media URL preserves the authenticated browser request. */}
+            {/* UploadThing serves public images directly so they do not consume Vercel bandwidth. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt={image.alt || image.filename || 'Post image'}

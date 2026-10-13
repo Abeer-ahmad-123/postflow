@@ -1,6 +1,6 @@
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
+import { uploadthingStorage } from '@payloadcms/storage-uploadthing'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -10,10 +10,12 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Posts } from './collections/Posts'
 import { PostActions } from './collections/PostActions'
+import { isUploadThingStorageConfigured } from './lib/storage/uploadthing'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 const legacySSLModeAliases = new Set(['prefer', 'require', 'verify-ca'])
+const uploadThingStorageEnabled = isUploadThingStorageConfigured()
 
 const getDatabaseUrl = () => {
   const databaseUrl = process.env.DATABASE_URL || ''
@@ -59,13 +61,24 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
-    vercelBlobStorage({
-      addRandomSuffix: true,
-      clientUploads: true,
+    uploadthingStorage({
+      alwaysInsertFields: true,
+      clientUploads: {
+        routerInputConfig: {
+          blob: {
+            maxFileCount: 1,
+            maxFileSize: '16MB',
+          },
+        },
+      },
       collections: {
         media: true,
       },
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      enabled: uploadThingStorageEnabled,
+      options: {
+        acl: 'public-read',
+        token: process.env.UPLOADTHING_TOKEN || '',
+      },
     }),
   ],
 })

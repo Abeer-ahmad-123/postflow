@@ -25,7 +25,10 @@ import {
   MAX_POST_IMAGE_SIZE,
   POST_IMAGE_ACCEPT,
 } from '@/lib/posts/postImageConfig'
-import { deleteUploadedMedia, uploadPostImagesToBlob } from '@/lib/posts/postImageUploads.client'
+import {
+  deleteUploadedMedia,
+  uploadPostImagesToUploadThing,
+} from '@/lib/posts/postImageUploads.client'
 import { relationshipID } from '@/lib/utils'
 import type { Media, Post } from '@/payload-types'
 
@@ -33,23 +36,23 @@ type PostFormProps =
   | {
       mode: 'create'
       post?: never
-      useBlobUploads: boolean
+      useDirectUploads: boolean
     }
   | {
       mode: 'edit'
       post: Post
-      useBlobUploads: boolean
+      useDirectUploads: boolean
     }
 
 export function PostForm(props: PostFormProps) {
   if (props.mode === 'create') {
-    return <CreatePostForm useBlobUploads={props.useBlobUploads} />
+    return <CreatePostForm useDirectUploads={props.useDirectUploads} />
   }
 
-  return <EditPostForm post={props.post} useBlobUploads={props.useBlobUploads} />
+  return <EditPostForm post={props.post} useDirectUploads={props.useDirectUploads} />
 }
 
-function CreatePostForm({ useBlobUploads }: { useBlobUploads: boolean }) {
+function CreatePostForm({ useDirectUploads }: { useDirectUploads: boolean }) {
   const router = useRouter()
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
@@ -66,11 +69,11 @@ function CreatePostForm({ useBlobUploads }: { useBlobUploads: boolean }) {
     let uploadedMediaIds: number[] = []
 
     try {
-      if (useBlobUploads) {
+      if (useDirectUploads) {
         const files = formData
           .getAll('images')
           .filter((entry): entry is File => typeof entry !== 'string' && entry.size > 0)
-        const media = await uploadPostImagesToBlob(files)
+        const media = await uploadPostImagesToUploadThing(files)
 
         uploadedMediaIds = media.map((item) => item.id)
         formData.delete('images')
@@ -121,7 +124,7 @@ function CreatePostForm({ useBlobUploads }: { useBlobUploads: boolean }) {
   )
 }
 
-function EditPostForm({ post, useBlobUploads }: { post: Post; useBlobUploads: boolean }) {
+function EditPostForm({ post, useDirectUploads }: { post: Post; useDirectUploads: boolean }) {
   const router = useRouter()
   const toastKey = useRef('')
   const submittedPostText = useRef('')
@@ -182,11 +185,11 @@ function EditPostForm({ post, useBlobUploads }: { post: Post; useBlobUploads: bo
         uploadedMediaIds.current = []
 
         try {
-          if (useBlobUploads) {
+          if (useDirectUploads) {
             const files = formData
               .getAll('images')
               .filter((entry): entry is File => typeof entry !== 'string' && entry.size > 0)
-            const media = await uploadPostImagesToBlob(files)
+            const media = await uploadPostImagesToUploadThing(files)
 
             uploadedMediaIds.current = media.map((item) => item.id)
             formData.delete('images')
@@ -428,7 +431,7 @@ function ImagePreview({
     <div className="group relative overflow-hidden rounded-md border border-slate-200 bg-slate-50">
       <div className="aspect-video">
         {src ? (
-          // The direct media URL preserves the authenticated browser request.
+          // UploadThing serves public post images directly so they do not consume Vercel bandwidth.
           // eslint-disable-next-line @next/next/no-img-element
           <img alt={alt} className="h-full w-full object-cover" src={src} />
         ) : (

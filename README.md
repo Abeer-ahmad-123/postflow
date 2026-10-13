@@ -38,12 +38,14 @@ SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
 SLACK_OPEN_STATUS_MENTION=U...
 SLACK_REVIEW_STATUS_MENTION=U...
 SLACK_READY_STATUS_MENTION=U...
-BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
+UPLOADTHING_TOKEN=...
 ```
 
 `SLACK_WEBHOOK_URL` is optional. When set to a Slack incoming webhook URL, Postflow sends Slack notifications when a topic is added, submitted for review, sent back, declined, marked as ready, or marked as posted. Open status changes mention the Slack member configured in `SLACK_OPEN_STATUS_MENTION`; review status changes mention the member configured in `SLACK_REVIEW_STATUS_MENTION`; ready status changes mention the member configured in `SLACK_READY_STATUS_MENTION` for Ehtisham Ashraf. Use Slack member IDs like `U123ABC` or mention tokens like `<@U123ABC>`; plain names like `@Abdul Wadood` will not trigger native Slack pings.
 
-`BLOB_READ_WRITE_TOKEN` enables Vercel Blob storage and direct browser uploads. If it is omitted during local development, Payload falls back to the ignored local `media/` directory.
+`UPLOADTHING_TOKEN` enables UploadThing storage and direct browser uploads. Create a free UploadThing account and app, open the app's **API Keys** page, and copy its token. No payment method, bucket, custom domain, or CORS policy is required. Add the token to `.env` locally and to the Vercel project's environment variables.
+
+If the token is omitted during local development, Payload falls back to the ignored local `media/` directory. Production image uploads require the token because Vercel's function filesystem is read-only. Post images are publicly readable from UploadThing, while uploading and deleting still require an authenticated Postflow user.
 
 4. Generate Payload types:
 
@@ -136,8 +138,8 @@ npm run build
 Deployment checklist:
 
 1. Create a Neon PostgreSQL database.
-2. Create and connect a Vercel Blob store to the project. Vercel adds `BLOB_READ_WRITE_TOKEN` automatically.
-3. Set `DATABASE_URL`, `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`, `POSTFLOW_SIGNUP_INVITE_CODE`, and optional `SLACK_WEBHOOK_URL` in Vercel project environment variables. If the Neon URL contains `sslmode=require`, change it to `sslmode=verify-full`.
+2. Create a free UploadThing app and copy the token from its **API Keys** page. UploadThing's free plan does not require a payment method.
+3. Set `DATABASE_URL`, `PAYLOAD_SECRET`, `NEXT_PUBLIC_SERVER_URL`, `POSTFLOW_SIGNUP_INVITE_CODE`, `UPLOADTHING_TOKEN`, and optional `SLACK_WEBHOOK_URL` in Vercel project environment variables. If the Neon URL contains `sslmode=require`, change it to `sslmode=verify-full`.
 4. Set `NEXT_PUBLIC_SERVER_URL` to the production Vercel URL, for example `https://your-project.vercel.app`.
 5. Run Payload migrations during release setup with `npm run migrate`.
 6. Deploy the Next.js app to Vercel.

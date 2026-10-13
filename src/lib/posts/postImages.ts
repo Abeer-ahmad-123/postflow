@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 
 import type { Media, User } from '@/payload-types'
+import { assertImageStorageAvailableOnVercel } from '@/lib/storage/uploadthing'
 import {
   MAX_POST_IMAGES,
   MAX_POST_IMAGE_SIZE,
@@ -22,14 +23,23 @@ function formImageIds(formData: FormData, key: string) {
     try {
       const parsed: unknown = JSON.parse(value)
 
+      if (!Array.isArray(parsed)) {
+        throw new Error()
+      }
+
+      const imageIds = parsed.map((value) =>
+        typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value,
+      )
+
       if (
-        !Array.isArray(parsed) ||
-        !parsed.every((value) => typeof value === 'string' && /^\d+$/.test(value))
+        !imageIds.every(
+          (value) => typeof value === 'number' && Number.isSafeInteger(value) && value > 0,
+        )
       ) {
         throw new Error()
       }
 
-      return [...new Set(parsed.map(Number))]
+      return [...new Set(imageIds as number[])]
     } catch {
       throw new Error('The selected images are invalid. Please refresh and try again.')
     }
@@ -72,6 +82,10 @@ export async function uploadPostImages({
   user: User
 }) {
   const uploaded: Media[] = []
+
+  if (files.length > 0) {
+    assertImageStorageAvailableOnVercel()
+  }
 
   try {
     for (const file of files) {
